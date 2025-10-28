@@ -23,7 +23,7 @@ body {
 
 /* Navigation */
 .navbar {
-    background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+    background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%); /* Updated: Deep Sky Blue Gradient */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
@@ -77,13 +77,13 @@ body {
 
 .nav-link.active {
     background: white;
-    color: #0d9488;
+    color: #0284c7; /* Updated: New Primary Color */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Hero Section */
 .hero {
-    background: linear-gradient(135deg, #f0fdfa 0%, #d1fae5 100%);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); /* Updated: Light Sky Blue Gradient */
     min-height: calc(100vh - 70px);
     display: flex;
     align-items: center;
@@ -99,7 +99,7 @@ body {
 .hero-title {
     font-size: 4rem;
     font-weight: bold;
-    color: #0f766e;
+    color: #0369a1; /* Updated: Dark Blue */
     margin-bottom: 1rem;
 }
 
@@ -137,7 +137,7 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #14b8a6 0%, #10b981 100%);
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); /* Updated: Vibrant Sky Blue Gradient */
     color: white;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -149,12 +149,12 @@ body {
 
 .btn-secondary {
     background: white;
-    color: #0d9488;
-    border: 2px solid #14b8a6;
+    color: #0284c7; /* Updated: New Primary Color */
+    border: 2px solid #38bdf8; /* Updated: New Primary Button Color */
 }
 
 .btn-secondary:hover {
-    background: #f0fdfa;
+    background: #f0f9ff; /* Updated: Light Sky Blue */
     transform: translateY(-2px);
 }
 
@@ -203,7 +203,7 @@ body {
 .feature-icon {
     width: 48px;
     height: 48px;
-    color: #0d9488;
+    color: #0284c7; /* Updated: New Primary Color */
     margin-bottom: 1rem;
 }
 
@@ -220,7 +220,7 @@ body {
 
 /* Page Content */
 .page-content {
-    background: linear-gradient(135deg, #f0fdfa 0%, #d1fae5 100%);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); /* Updated: Light Sky Blue Gradient */
     flex: 1;
     padding: 4rem 0;
 }
@@ -228,7 +228,7 @@ body {
 .page-title {
     font-size: 2.5rem;
     font-weight: bold;
-    color: #0f766e;
+    color: #0369a1; /* Updated: Dark Blue */
     margin-bottom: 0.5rem;
 }
 
@@ -281,8 +281,8 @@ body {
 .form-input:focus,
 .form-textarea:focus {
     outline: none;
-    border-color: #14b8a6;
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+    border-color: #38bdf8; /* Updated: Vibrant Sky Blue */
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); /* Updated: Adjusted Shadow Transparency */
 }
 
 .form-textarea {
@@ -290,12 +290,49 @@ body {
     font-family: inherit;
 }
 
+/* Custom styling to make file input blend with the form */
+.form-input[type="file"] {
+    /* Required to ensure the file input is styled like a text box */
+    height: auto; /* Allow height to adjust */
+    line-height: 1.5; /* Match line height of text inputs */
+    padding-top: 0.75rem; /* Match padding of text inputs */
+    padding-bottom: 0.75rem; /* Match padding of text inputs */
+    
+    /* Make the default file text/button blend in */
+    color: #6b7280; /* Match placeholder color */
+    background-color: white; 
+    border: 2px solid #d1d5db;
+    
+    /* Hide the built-in file chooser text/button on WebKit (Chrome/Safari) */
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.form-input[type="file"]::-webkit-file-upload-button {
+    /* Style the actual "Choose File" button */
+    visibility: hidden;
+}
+
+/* Fallback for the text display area (e.g., Firefox) to ensure padding is correct */
+.form-input[type="file"]::before {
+    content: 'Choose file...'; /* Custom text to replace the default */
+    display: inline-block;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); /* Light Sky Blue */
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: #0284c7; /* Sky Blue */
+    border: 1px solid #d1d5db;
+}
+
 /* Toast Notification */
 .toast {
     position: fixed;
     top: 100px;
     right: 20px;
-    background: #10b981;
+    background: #0ea5e9; /* Updated: Sky Blue */
     color: white;
     padding: 1rem 1.5rem;
     border-radius: 0.5rem;
@@ -331,7 +368,7 @@ body {
     width: 48px;
     height: 48px;
     border: 4px solid #d1d5db;
-    border-top-color: #14b8a6;
+    border-top-color: #38bdf8; /* Updated: Vibrant Sky Blue */
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -387,7 +424,7 @@ body {
 
 .spot-image {
     height: 200px;
-    background: linear-gradient(135deg, #5eead4 0%, #10b981 100%);
+    background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%); /* Updated: Soft Blue Gradient */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -420,7 +457,7 @@ body {
 .spot-location {
     display: flex;
     align-items: center;
-    color: #0d9488;
+    color: #0284c7; /* Updated: New Primary Color */
     margin-bottom: 1rem;
     font-size: 0.875rem;
 }
@@ -475,7 +512,7 @@ body {
 }
 
 .creator-card {
-    background: linear-gradient(135deg, #f0fdfa 0%, #d1fae5 100%);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); /* Updated: Light Sky Blue Gradient */
     padding: 1.5rem;
     border-radius: 0.75rem;
     margin-bottom: 1.5rem;
@@ -483,7 +520,7 @@ body {
 
 .creator-name {
     font-weight: bold;
-    color: #0f766e;
+    color: #0369a1; /* Updated: Dark Blue */
 }
 
 .social-links {

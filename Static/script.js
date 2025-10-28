@@ -9,10 +9,12 @@ function showToast(message, type = 'success') {
     toast.textContent = message;
     toast.className = 'toast show';
     
+    // Updated toast colors for Sky Blue Gradient theme
     if (type === 'error') {
         toast.style.background = '#ef4444';
     } else {
-        toast.style.background = '#10b981';
+        // Updated: Sky Blue from style.css
+        toast.style.background = '#0ea5e9'; 
     }
     
     setTimeout(() => {
@@ -26,7 +28,8 @@ if (document.getElementById('submitBtn')) {
     const spotName = document.getElementById('spotName');
     const spotDescription = document.getElementById('spotDescription');
     const spotLocation = document.getElementById('spotLocation');
-    const spotImage = document.getElementById('spotImage');
+    // Updated: Get the file input element
+    const spotImageFile = document.getElementById('spotImageFile'); 
 
     submitBtn.addEventListener('click', async () => {
         // Validate required fields
@@ -35,13 +38,17 @@ if (document.getElementById('submitBtn')) {
             return;
         }
 
-        // Prepare data
-        const spotData = {
-            name: spotName.value.trim(),
-            description: spotDescription.value.trim(),
-            location: spotLocation.value.trim(),
-            imageUrl: spotImage.value.trim() || null
-        };
+        // Updated: Prepare data using FormData for file upload
+        const formData = new FormData();
+        formData.append('name', spotName.value.trim());
+        formData.append('description', spotDescription.value.trim());
+        formData.append('location', spotLocation.value.trim());
+        
+        // Append the file if one was selected
+        if (spotImageFile.files.length > 0) {
+            formData.append('image', spotImageFile.files[0]);
+        }
+        // Note: The backend must now look for 'image' in the request files, not 'imageUrl' in the JSON body
 
         // Disable button and show loading state
         submitBtn.disabled = true;
@@ -57,10 +64,9 @@ if (document.getElementById('submitBtn')) {
             // Send POST request to Flask backend
             const response = await fetch(API_BASE_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(spotData)
+                // Important: Do NOT set 'Content-Type' when using FormData and files. 
+                // The browser will set the correct 'multipart/form-data' header automatically.
+                body: formData // Send the FormData object
             });
 
             if (response.ok) {
@@ -70,7 +76,8 @@ if (document.getElementById('submitBtn')) {
                 spotName.value = '';
                 spotDescription.value = '';
                 spotLocation.value = '';
-                spotImage.value = '';
+                // Updated: Clear file input
+                spotImageFile.value = '';
                 
                 // Optional: Redirect to explore page after 2 seconds
                 setTimeout(() => {
@@ -106,6 +113,10 @@ if (document.getElementById('submitBtn')) {
 }
 
 // Explore Page Functionality
+// (The rest of the explore page logic remains the same, but the console log color is updated)
+
+// ... [rest of the explore page functionality]
+
 if (document.getElementById('spotsGrid')) {
     const spotsGrid = document.getElementById('spotsGrid');
     const loadingSpinner = document.getElementById('loadingSpinner');
@@ -244,5 +255,6 @@ document.querySelectorAll('.feature-card, .spot-card').forEach(card => {
 });
 
 // Console welcome message
-console.log('%cWelcome to Ferd! 🗺️', 'color: #0d9488; font-size: 24px; font-weight: bold;');
+// Updated: Console log color to match the new Sky Blue theme
+console.log('%cWelcome to Ferd! 🗺️', 'color: #0ea5e9; font-size: 24px; font-weight: bold;');
 console.log('%cDiscover and share hidden gems around you', 'color: #6b7280; font-size: 14px;');
