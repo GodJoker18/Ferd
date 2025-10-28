@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Spot - Ferd</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span class="logo-text">Ferd</span>
+                </div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="add.html" class="nav-link active">Add Spot</a>
+                    <a href="explore.html" class="nav-link">Explore</a>
+                    <a href="about.html" class="nav-link">About</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page-content">
+        <div class="container">
+            <div class="form-container">
+                <h2 class="page-title">Add a Hidden Spot</h2>
+                <p class="page-subtitle">Share your favorite place with the community</p>
+
+                <div id="spotForm">
+                    <div class="form-group">
+                        <label class="form-label">Spot Name</label>
+                        <input type="text" id="spotName" class="form-input" placeholder="e.g., Secret Beach Cove" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="spotDescription" class="form-textarea" rows="4" placeholder="Tell us what makes this place special..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Location or City</label>
+                        <input type="text" id="spotLocation" class="form-input" placeholder="e.g., Santorini, Greece" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Image URL (Optional)</label>
+                        <input type="url" id="spotImage" class="form-input" placeholder="https://example.com/image.jpg">
+                    </div>
+
+                    <button id="submitBtn" class="btn btn-primary btn-full">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                        Submit Spot
+                    </button>
+                </div>
+
+                <div id="toast" class="toast"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">© 2025 Ferd — Discover Hidden Gems</p>
+        </div>
+    </footer>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
