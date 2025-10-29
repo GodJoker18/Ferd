@@ -1,5 +1,5 @@
-// API Base URL - Update this to match your Flask backend
-const API_BASE_URL = '/api/hidden-spots';
+// API Base URL - UPDATED to point to Flask backend
+const API_BASE_URL = 'http://127.0.0.1:5000/api/hidden-spots';
 
 // Toast notification function
 function showToast(message, type = 'success') {
@@ -9,11 +9,9 @@ function showToast(message, type = 'success') {
     toast.textContent = message;
     toast.className = 'toast show';
     
-    // Updated toast colors for Sky Blue Gradient theme
     if (type === 'error') {
         toast.style.background = '#ef4444';
     } else {
-        // Updated: Sky Blue from style.css
         toast.style.background = '#0ea5e9'; 
     }
     
@@ -28,7 +26,6 @@ if (document.getElementById('submitBtn')) {
     const spotName = document.getElementById('spotName');
     const spotDescription = document.getElementById('spotDescription');
     const spotLocation = document.getElementById('spotLocation');
-    // Updated: Get the file input element
     const spotImageFile = document.getElementById('spotImageFile'); 
 
     submitBtn.addEventListener('click', async () => {
@@ -38,7 +35,7 @@ if (document.getElementById('submitBtn')) {
             return;
         }
 
-        // Updated: Prepare data using FormData for file upload
+        // Prepare data using FormData for file upload
         const formData = new FormData();
         formData.append('name', spotName.value.trim());
         formData.append('description', spotDescription.value.trim());
@@ -48,7 +45,6 @@ if (document.getElementById('submitBtn')) {
         if (spotImageFile.files.length > 0) {
             formData.append('image', spotImageFile.files[0]);
         }
-        // Note: The backend must now look for 'image' in the request files, not 'imageUrl' in the JSON body
 
         // Disable button and show loading state
         submitBtn.disabled = true;
@@ -61,25 +57,27 @@ if (document.getElementById('submitBtn')) {
         `;
 
         try {
+            console.log('Sending request to:', API_BASE_URL);
+            
             // Send POST request to Flask backend
             const response = await fetch(API_BASE_URL, {
                 method: 'POST',
-                // Important: Do NOT set 'Content-Type' when using FormData and files. 
-                // The browser will set the correct 'multipart/form-data' header automatically.
-                body: formData // Send the FormData object
+                body: formData
             });
 
+            console.log('Response status:', response.status);
+
             if (response.ok) {
+                const data = await response.json();
                 showToast('🎉 Spot added successfully!', 'success');
                 
                 // Clear form
                 spotName.value = '';
                 spotDescription.value = '';
                 spotLocation.value = '';
-                // Updated: Clear file input
                 spotImageFile.value = '';
                 
-                // Optional: Redirect to explore page after 2 seconds
+                // Redirect to explore page after 2 seconds
                 setTimeout(() => {
                     window.location.href = 'explore.html';
                 }, 2000);
@@ -89,7 +87,7 @@ if (document.getElementById('submitBtn')) {
             }
         } catch (error) {
             console.error('Error adding spot:', error);
-            showToast('Network error. Please check your connection.', 'error');
+            showToast('Cannot connect to server. Make sure Flask is running!', 'error');
         } finally {
             // Re-enable button
             submitBtn.disabled = false;
@@ -113,10 +111,6 @@ if (document.getElementById('submitBtn')) {
 }
 
 // Explore Page Functionality
-// (The rest of the explore page logic remains the same, but the console log color is updated)
-
-// ... [rest of the explore page functionality]
-
 if (document.getElementById('spotsGrid')) {
     const spotsGrid = document.getElementById('spotsGrid');
     const loadingSpinner = document.getElementById('loadingSpinner');
@@ -133,7 +127,7 @@ if (document.getElementById('spotsGrid')) {
         card.innerHTML = `
             <div class="spot-image">
                 ${imageUrl ? 
-                    `<img src="${imageUrl}" alt="${spot.name}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'2\\'><path d=\\'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\\'></path><circle cx=\\'12\\' cy=\\'10\\' r=\\'3\\'></circle></svg>'">` 
+                    `<img src="http://127.0.0.1:5000${imageUrl}" alt="${spot.name}" onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'2\\'><path d=\\'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\\'></path><circle cx=\\'12\\' cy=\\'10\\' r=\\'3\\'></circle></svg>'">` 
                     : 
                     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -166,24 +160,23 @@ if (document.getElementById('spotsGrid')) {
 
     // Function to fetch and display spots
     async function fetchSpots() {
-        // Show loading spinner
         loadingSpinner.style.display = 'block';
         emptyState.classList.remove('show');
         spotsGrid.innerHTML = '';
 
         try {
+            console.log('Fetching spots from:', API_BASE_URL);
             const response = await fetch(API_BASE_URL);
             
             if (response.ok) {
                 const spots = await response.json();
+                console.log('Fetched spots:', spots);
                 
-                // Hide loading spinner
                 loadingSpinner.style.display = 'none';
                 
                 if (spots.length === 0) {
                     emptyState.classList.add('show');
                 } else {
-                    // Display spots
                     spots.forEach((spot, index) => {
                         const card = createSpotCard(spot);
                         card.style.animationDelay = `${index * 0.1}s`;
@@ -197,11 +190,10 @@ if (document.getElementById('spotsGrid')) {
             console.error('Error fetching spots:', error);
             loadingSpinner.style.display = 'none';
             
-            // Show error message
             spotsGrid.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
                     <p style="color: #ef4444; font-size: 1.125rem;">
-                        Failed to load spots. Please check your connection and try again.
+                        Cannot connect to server. Make sure Flask is running on port 5000!
                     </p>
                 </div>
             `;
@@ -255,6 +247,5 @@ document.querySelectorAll('.feature-card, .spot-card').forEach(card => {
 });
 
 // Console welcome message
-// Updated: Console log color to match the new Sky Blue theme
 console.log('%cWelcome to Ferd! 🗺️', 'color: #0ea5e9; font-size: 24px; font-weight: bold;');
 console.log('%cDiscover and share hidden gems around you', 'color: #6b7280; font-size: 14px;');
