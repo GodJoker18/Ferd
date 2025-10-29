@@ -1,4 +1,4 @@
-// API Base URL - UPDATED to point to Flask backend
+// API Base URL
 const API_BASE_URL = 'http://127.0.0.1:5000/api/hidden-spots';
 
 // Toast notification function
@@ -29,24 +29,20 @@ if (document.getElementById('submitBtn')) {
     const spotImageFile = document.getElementById('spotImageFile'); 
 
     submitBtn.addEventListener('click', async () => {
-        // Validate required fields
         if (!spotName.value.trim() || !spotDescription.value.trim() || !spotLocation.value.trim()) {
             showToast('Please fill in all required fields', 'error');
             return;
         }
 
-        // Prepare data using FormData for file upload
         const formData = new FormData();
         formData.append('name', spotName.value.trim());
         formData.append('description', spotDescription.value.trim());
         formData.append('location', spotLocation.value.trim());
         
-        // Append the file if one was selected
         if (spotImageFile.files.length > 0) {
             formData.append('image', spotImageFile.files[0]);
         }
 
-        // Disable button and show loading state
         submitBtn.disabled = true;
         submitBtn.innerHTML = `
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -57,27 +53,19 @@ if (document.getElementById('submitBtn')) {
         `;
 
         try {
-            console.log('Sending request to:', API_BASE_URL);
-            
-            // Send POST request to Flask backend
             const response = await fetch(API_BASE_URL, {
                 method: 'POST',
                 body: formData
             });
 
-            console.log('Response status:', response.status);
-
             if (response.ok) {
-                const data = await response.json();
                 showToast('🎉 Spot added successfully!', 'success');
                 
-                // Clear form
                 spotName.value = '';
                 spotDescription.value = '';
                 spotLocation.value = '';
                 spotImageFile.value = '';
                 
-                // Redirect to explore page after 2 seconds
                 setTimeout(() => {
                     window.location.href = 'explore.html';
                 }, 2000);
@@ -89,7 +77,6 @@ if (document.getElementById('submitBtn')) {
             console.error('Error adding spot:', error);
             showToast('Cannot connect to server. Make sure Flask is running!', 'error');
         } finally {
-            // Re-enable button
             submitBtn.disabled = false;
             submitBtn.innerHTML = `
                 <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -101,7 +88,6 @@ if (document.getElementById('submitBtn')) {
         }
     });
 
-    // Allow form submission with Enter key (except in textarea)
     document.getElementById('spotForm').addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
@@ -117,12 +103,29 @@ if (document.getElementById('spotsGrid')) {
     const emptyState = document.getElementById('emptyState');
     const refreshBtn = document.getElementById('refreshBtn');
 
+    // Function to create star rating display
+    function createStarRating(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= Math.floor(rating)) {
+                stars += '⭐';
+            } else if (i === Math.ceil(rating) && rating % 1 !== 0) {
+                stars += '⭐'; // Half star shown as full for simplicity
+            } else {
+                stars += '☆';
+            }
+        }
+        return stars;
+    }
+
     // Function to create a spot card
     function createSpotCard(spot) {
         const card = document.createElement('div');
         card.className = 'spot-card';
         
         const imageUrl = spot.imageUrl || spot.image_url;
+        const avgRating = spot.avgRating || 0;
+        const reviewCount = spot.reviewCount || 0;
         
         card.innerHTML = `
             <div class="spot-image">
@@ -145,32 +148,38 @@ if (document.getElementById('spotsGrid')) {
                     ${escapeHtml(spot.location)}
                 </div>
                 <p class="spot-description">${escapeHtml(spot.description)}</p>
+                <div class="spot-rating">
+                    <span class="stars">${createStarRating(avgRating)}</span>
+                    <span class="rating-text">${avgRating > 0 ? avgRating.toFixed(1) : 'No ratings'} ${reviewCount > 0 ? `(${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})` : ''}</span>
+                </div>
+                <button class="btn btn-secondary btn-small" onclick="openReviewModal(${spot.id}, '${escapeHtml(spot.name)}')">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    View Reviews
+                </button>
             </div>
         `;
         
         return card;
     }
 
-    // Function to escape HTML to prevent XSS
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
-    // Function to fetch and display spots
     async function fetchSpots() {
         loadingSpinner.style.display = 'block';
         emptyState.classList.remove('show');
         spotsGrid.innerHTML = '';
 
         try {
-            console.log('Fetching spots from:', API_BASE_URL);
             const response = await fetch(API_BASE_URL);
             
             if (response.ok) {
                 const spots = await response.json();
-                console.log('Fetched spots:', spots);
                 
                 loadingSpinner.style.display = 'none';
                 
@@ -200,13 +209,189 @@ if (document.getElementById('spotsGrid')) {
         }
     }
 
-    // Refresh button functionality
     if (refreshBtn) {
         refreshBtn.addEventListener('click', fetchSpots);
     }
 
-    // Initial fetch
     fetchSpots();
+}
+
+// Review Modal Functions (Global scope)
+window.openReviewModal = async function(spotId, spotName) {
+    const modal = document.getElementById('reviewModal');
+    const modalTitle = document.getElementById('modalSpotName');
+    const reviewsList = document.getElementById('reviewsList');
+    
+    modalTitle.textContent = spotName;
+    modal.style.display = 'flex';
+    
+    // Store spotId for later use
+    modal.dataset.spotId = spotId;
+    
+    // Fetch and display reviews
+    try {
+        reviewsList.innerHTML = '<p style="text-align: center; color: #6b7280;">Loading reviews...</p>';
+        
+        const response = await fetch(`${API_BASE_URL}/${spotId}/reviews`);
+        if (response.ok) {
+            const reviews = await response.json();
+            
+            if (reviews.length === 0) {
+                reviewsList.innerHTML = '<p style="text-align: center; color: #6b7280;">No reviews yet. Be the first to review!</p>';
+            } else {
+                reviewsList.innerHTML = reviews.map(review => `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <strong>${escapeHtml(review.userName)}</strong>
+                            <span class="review-stars">${'⭐'.repeat(review.rating)}</span>
+                        </div>
+                        <p class="review-comment">${escapeHtml(review.comment)}</p>
+                        <span class="review-date">${new Date(review.createdAt).toLocaleDateString()}</span>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching reviews:', error);
+        reviewsList.innerHTML = '<p style="text-align: center; color: #ef4444;">Failed to load reviews</p>';
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+};
+
+window.closeReviewModal = function() {
+    const modal = document.getElementById('reviewModal');
+    modal.style.display = 'none';
+};
+
+window.submitReview = async function() {
+    const modal = document.getElementById('reviewModal');
+    const spotId = modal.dataset.spotId;
+    const userName = document.getElementById('reviewUserName').value.trim();
+    const rating = parseInt(document.getElementById('reviewRating').value);
+    const comment = document.getElementById('reviewComment').value.trim();
+    
+    if (!userName || !rating || !comment) {
+        showToast('Please fill in all review fields', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/${spotId}/reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_name: userName,
+                rating: rating,
+                comment: comment
+            })
+        });
+        
+        if (response.ok) {
+            showToast('✅ Review added successfully!', 'success');
+            
+            // Clear form
+            document.getElementById('reviewUserName').value = '';
+            document.getElementById('reviewRating').value = '5';
+            document.getElementById('reviewComment').value = '';
+            
+            // Refresh reviews
+            const spotName = document.getElementById('modalSpotName').textContent;
+            await openReviewModal(spotId, spotName);
+            
+            // Refresh spots to show updated rating
+            if (document.getElementById('spotsGrid')) {
+                const spotsGrid = document.getElementById('spotsGrid');
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                const emptyState = document.getElementById('emptyState');
+                
+                // Re-fetch spots silently
+                setTimeout(async () => {
+                    const response = await fetch(API_BASE_URL);
+                    if (response.ok) {
+                        const spots = await response.json();
+                        spotsGrid.innerHTML = '';
+                        spots.forEach((spot, index) => {
+                            const card = createSpotCard(spot);
+                            spotsGrid.appendChild(card);
+                        });
+                    }
+                }, 1000);
+            }
+        } else {
+            const errorData = await response.json();
+            showToast(errorData.message || 'Failed to add review', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding review:', error);
+        showToast('Failed to add review', 'error');
+    }
+};
+
+// Helper function for creating spot cards (needed for refresh)
+function createSpotCard(spot) {
+    const card = document.createElement('div');
+    card.className = 'spot-card';
+    
+    const imageUrl = spot.imageUrl || spot.image_url;
+    const avgRating = spot.avgRating || 0;
+    const reviewCount = spot.reviewCount || 0;
+    
+    function createStarRating(rating) {
+        let stars = '';
+        for (let i = 1; i <= 5; i++) {
+            stars += i <= Math.floor(rating) ? '⭐' : '☆';
+        }
+        return stars;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    card.innerHTML = `
+        <div class="spot-image">
+            ${imageUrl ? 
+                `<img src="http://127.0.0.1:5000${imageUrl}" alt="${spot.name}">` 
+                : 
+                `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>`
+            }
+        </div>
+        <div class="spot-content">
+            <h3 class="spot-title">${escapeHtml(spot.name)}</h3>
+            <div class="spot-location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                ${escapeHtml(spot.location)}
+            </div>
+            <p class="spot-description">${escapeHtml(spot.description)}</p>
+            <div class="spot-rating">
+                <span class="stars">${createStarRating(avgRating)}</span>
+                <span class="rating-text">${avgRating > 0 ? avgRating.toFixed(1) : 'No ratings'} ${reviewCount > 0 ? `(${reviewCount} ${reviewCount === 1 ? 'review' : 'reviews'})` : ''}</span>
+            </div>
+            <button class="btn btn-secondary btn-small" onclick="openReviewModal(${spot.id}, '${escapeHtml(spot.name)}')">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                View Reviews
+            </button>
+        </div>
+    `;
+    
+    return card;
 }
 
 // Smooth scroll for anchor links
@@ -221,29 +406,6 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             });
         }
     });
-});
-
-// Add fade-in animation on scroll
-const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-};
-
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, observerOptions);
-
-// Observe all feature cards and spot cards
-document.querySelectorAll('.feature-card, .spot-card').forEach(card => {
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(30px)';
-    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(card);
 });
 
 // Console welcome message

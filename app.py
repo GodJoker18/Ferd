@@ -30,10 +30,11 @@ def get_db_connection():
 
 
 def create_db():
-    """Initialize the database and create the spots table if it doesn't exist."""
+    """Initialize the database and create tables if they don't exist."""
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     
+    # Create spots table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS spots (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +43,19 @@ def create_db():
             location TEXT NOT NULL,
             image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    # Create reviews table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            spot_id INTEGER NOT NULL,
+            user_name TEXT NOT NULL,
+            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+            comment TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (spot_id) REFERENCES spots (id) ON DELETE CASCADE
         )
     ''')
     
@@ -108,18 +122,28 @@ def health_check():
 @app.route('/api/hidden-spots', methods=['GET'])
 def get_spots():
     """
-    GET endpoint to retrieve all hidden spots.
+    GET endpoint to retrieve all hidden spots with their average ratings.
     Returns: JSON array of spot objects
     """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Fetch all spots from database
+        # Fetch all spots with average rating and review count
         cursor.execute('''
-            SELECT id, name, description, location, image_url, created_at 
-            FROM spots 
-            ORDER BY created_at DESC
+            SELECT 
+                s.id, 
+                s.name, 
+                s.description, 
+                s.location, 
+                s.image_url, 
+                s.created_at,
+                COALESCE(AVG(r.rating), 0) as avg_rating,
+                COUNT(r.id) as review_count
+            FROM spots s
+            LEFT JOIN reviews r ON s.id = r.spot_id
+            GROUP BY s.id
+            ORDER BY s.created_at DESC
         ''')
         
         spots = cursor.fetchall()
@@ -133,8 +157,10 @@ def get_spots():
                 'name': spot['name'],
                 'description': spot['description'],
                 'location': spot['location'],
-                'imageUrl': spot['image_url'],  # Frontend expects camelCase
-                'createdAt': spot['created_at']
+                'imageUrl': spot['image_url'],
+                'createdAt': spot['created_at'],
+                'avgRating': round(spot['avg_rating'], 1),
+                'reviewCount': spot['review_count']
             })
         
         return jsonify(spots_list), 200
@@ -153,7 +179,7 @@ def add_spot():
     """
     try:
         # Log incoming request for debugging
-        print("📝 Received POST request to /api/hidden-spots")
+        print("📥 Received POST request to /api/hidden-spots")
         print(f"Content-Type: {request.content_type}")
         print(f"Form data: {request.form}")
         print(f"Files: {request.files}")
@@ -225,6 +251,102 @@ def add_spot():
         }), 500
 
 
+@app.route('/api/hidden-spots/<int:spot_id>/reviews', methods=['GET'])
+def get_reviews(spot_id):
+    """
+    GET endpoint to retrieve all reviews for a specific spot.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, user_name, rating, comment, created_at
+            FROM reviews
+            WHERE spot_id = ?
+            ORDER BY created_at DESC
+        ''', (spot_id,))
+        
+        reviews = cursor.fetchall()
+        conn.close()
+        
+        reviews_list = []
+        for review in reviews:
+            reviews_list.append({
+                'id': review['id'],
+                'userName': review['user_name'],
+                'rating': review['rating'],
+                'comment': review['comment'],
+                'createdAt': review['created_at']
+            })
+        
+        return jsonify(reviews_list), 200
+    
+    except Exception as e:
+        print(f"Error fetching reviews: {str(e)}")
+        return jsonify({'error': 'Failed to fetch reviews'}), 500
+
+
+@app.route('/api/hidden-spots/<int:spot_id>/reviews', methods=['POST'])
+def add_review(spot_id):
+    """
+    POST endpoint to add a review for a specific spot.
+    Accepts: JSON with user_name, rating, and comment
+    """
+    try:
+        data = request.get_json()
+        
+        user_name = data.get('user_name')
+        rating = data.get('rating')
+        comment = data.get('comment')
+        
+        # Validate required fields
+        if not user_name or not rating or not comment:
+            return jsonify({
+                'error': 'Missing required fields',
+                'message': 'User name, rating, and comment are required'
+            }), 400
+        
+        # Validate rating range
+        if not isinstance(rating, int) or rating < 1 or rating > 5:
+            return jsonify({
+                'error': 'Invalid rating',
+                'message': 'Rating must be between 1 and 5'
+            }), 400
+        
+        # Check if spot exists
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT id FROM spots WHERE id = ?', (spot_id,))
+        spot = cursor.fetchone()
+        
+        if not spot:
+            conn.close()
+            return jsonify({'error': 'Spot not found'}), 404
+        
+        # Insert review
+        cursor.execute('''
+            INSERT INTO reviews (spot_id, user_name, rating, comment)
+            VALUES (?, ?, ?, ?)
+        ''', (spot_id, user_name, rating, comment))
+        
+        conn.commit()
+        review_id = cursor.lastrowid
+        conn.close()
+        
+        print(f"✅ Review added successfully! ID: {review_id}")
+        
+        return jsonify({
+            'message': 'Review added successfully!',
+            'id': review_id
+        }), 201
+    
+    except Exception as e:
+        print(f"Error adding review: {str(e)}")
+        return jsonify({'error': 'Failed to add review'}), 500
+
+
 @app.route('/api/hidden-spots/<int:spot_id>', methods=['DELETE'])
 def delete_spot(spot_id):
     """
@@ -242,7 +364,7 @@ def delete_spot(spot_id):
             conn.close()
             return jsonify({'error': 'Spot not found'}), 404
         
-        # Delete the spot
+        # Delete the spot (reviews will be deleted automatically due to CASCADE)
         cursor.execute('DELETE FROM spots WHERE id = ?', (spot_id,))
         conn.commit()
         conn.close()
